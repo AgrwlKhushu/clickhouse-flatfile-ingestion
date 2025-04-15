@@ -1,32 +1,37 @@
 import React from "react";
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
-import { Container } from "react-bootstrap";
+import {
+	BrowserRouter as Router,
+	Routes,
+	Route,
+	Navigate,
+} from "react-router-dom";
 import Navigation from "./components/Navigation";
 import ClickHouseToFlatFile from "./components/ClickHouseToFlatFile";
 import FlatFileToClickHouse from "./components/FlatFileToClickHouse";
-import "./App.css";
+import "./styles/theme.css";
 
-function App() {
+const App = () => {
 	return (
 		<Router>
-			<div className="App">
+			<div className="app">
 				<Navigation />
-				<Container className="mt-4">
-					<Routes>
-						<Route
-							path="/clickhouse-to-flatfile"
-							element={<ClickHouseToFlatFile />}
-						/>
-						<Route
-							path="/flatfile-to-clickhouse"
-							element={<FlatFileToClickHouse />}
-						/>
-						<Route path="/" element={<ClickHouseToFlatFile />} />
-					</Routes>
-				</Container>
+				<Routes>
+					<Route
+						path="/"
+						element={<Navigate to="/clickhouse-to-flatfile" replace />}
+					/>
+					<Route
+						path="/clickhouse-to-flatfile"
+						element={<ClickHouseToFlatFile />}
+					/>
+					<Route
+						path="/flatfile-to-clickhouse"
+						element={<FlatFileToClickHouse />}
+					/>
+				</Routes>
 			</div>
 		</Router>
 	);
-}
+};
 
 export default App;

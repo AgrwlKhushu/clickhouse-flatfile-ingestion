@@ -1,42 +1,36 @@
 import React from "react";
-import { Navbar, Nav, Container } from "react-bootstrap";
 import { Link, useLocation } from "react-router-dom";
 
-function Navigation() {
+const Navigation = () => {
 	const location = useLocation();
 
 	return (
-		<Navbar bg="white" expand="lg" className="mb-4">
-			<Container>
-				<Navbar.Brand as={Link} to="/">
-					Data Ingestion Tool
-				</Navbar.Brand>
-				<Navbar.Toggle aria-controls="basic-navbar-nav" />
-				<Navbar.Collapse id="basic-navbar-nav">
-					<Nav className="me-auto">
-						<Nav.Link
-							as={Link}
-							to="/clickhouse-to-flatfile"
-							className={
-								location.pathname === "/clickhouse-to-flatfile" ? "active" : ""
-							}
-						>
-							ClickHouse to Flat File
-						</Nav.Link>
-						<Nav.Link
-							as={Link}
-							to="/flatfile-to-clickhouse"
-							className={
-								location.pathname === "/flatfile-to-clickhouse" ? "active" : ""
-							}
-						>
-							Flat File to ClickHouse
-						</Nav.Link>
-					</Nav>
-				</Navbar.Collapse>
-			</Container>
-		</Navbar>
+		<nav className="nav">
+			<div className="container nav-container">
+				<Link to="/" className="nav-brand">
+					ClickHouse Data Ingestion
+				</Link>
+				<div className="nav-links">
+					<Link
+						to="/clickhouse-to-flatfile"
+						className={`nav-link ${
+							location.pathname === "/clickhouse-to-flatfile" ? "active" : ""
+						}`}
+					>
+						Export to File
+					</Link>
+					<Link
+						to="/flatfile-to-clickhouse"
+						className={`nav-link ${
+							location.pathname === "/flatfile-to-clickhouse" ? "active" : ""
+						}`}
+					>
+						Import from File
+					</Link>
+				</div>
+			</div>
+		</nav>
 	);
-}
+};
 
 export default Navigation;

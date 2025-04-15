@@ -1,169 +1,259 @@
 import React, { useState } from "react";
-import {
-	Form,
-	Button,
-	Card,
-	Row,
-	Col,
-	ListGroup,
-	Alert,
-	Spinner,
-} from "react-bootstrap";
 import axios from "axios";
 
-function FlatFileToClickHouse() {
-	const [settings, setSettings] = useState({
+const FlatFileToClickHouse = () => {
+	const [connectionSettings, setConnectionSettings] = useState({
+		host: "",
+		port: "",
+		database: "",
+		user: "",
+		jwtToken: "",
+	});
+	const [fileSettings, setFileSettings] = useState({
 		fileName: "",
 		delimiter: ",",
 	});
 	const [columns, setColumns] = useState([]);
 	const [selectedColumns, setSelectedColumns] = useState([]);
-	const [tableName, setTableName] = useState("");
-	const [status, setStatus] = useState({ type: "", message: "" });
+	const [targetTable, setTargetTable] = useState("");
 	const [loading, setLoading] = useState(false);
+	const [error, setError] = useState("");
+	const [success, setSuccess] = useState("");
 
-	const handleSettingsChange = (e) => {
-		setSettings({ ...settings, [e.target.name]: e.target.value });
-	};
+	const handleLoadColumns = async (e) => {
+		e.preventDefault();
+		setLoading(true);
+		setError("");
+		setSuccess("");
 
-	const handleLoadColumns = async () => {
 		try {
-			setLoading(true);
 			const response = await axios.post(
 				"http://localhost:8082/api/ingestion/flatfile/columns",
-				settings
+				fileSettings
 			);
 			setColumns(response.data);
-			setStatus({ type: "success", message: "Columns loaded successfully" });
-		} catch (error) {
-			setStatus({ type: "danger", message: "Failed to load columns" });
+			setSuccess("File columns loaded successfully");
+		} catch (err) {
+			setError(err.response?.data?.message || "Failed to load columns");
 		} finally {
 			setLoading(false);
 		}
 	};
 
-	const handleColumnToggle = (column) => {
-		setSelectedColumns((prev) =>
-			prev.includes(column)
-				? prev.filter((c) => c !== column)
-				: [...prev, column]
-		);
-	};
+	const handleImport = async (e) => {
+		e.preventDefault();
+		setLoading(true);
+		setError("");
+		setSuccess("");
 
-	const handleImport = async () => {
 		try {
-			setLoading(true);
-			const response = await axios.post(
-				"http://localhost:8082/api/ingestion/flatfile-to-clickhouse",
+			await axios.post(
+				"http://localhost:8082/api/ingestion/clickhouse/import",
 				{
-					...settings,
+					connectionSettings,
+					fileSettings,
 					columns: selectedColumns,
-					tableName,
+					targetTable,
 				}
 			);
-			setStatus({
-				type: "success",
-				message: `Imported ${response.data} records successfully`,
-			});
-		} catch (error) {
-			setStatus({ type: "danger", message: "Import failed" });
+			setSuccess("Data imported successfully");
+		} catch (err) {
+			setError(err.response?.data?.message || "Import failed");
 		} finally {
 			setLoading(false);
 		}
 	};
 
 	return (
-		<div>
-			<h2>Flat File to ClickHouse Import</h2>
+		<div className="container">
+			<div className="card">
+				<h2 className="mb-4">Import to ClickHouse</h2>
 
-			<Card className="mb-4">
-				<Card.Header>File Settings</Card.Header>
-				<Card.Body>
-					<Form>
-						<Row>
-							<Col md={6}>
-								<Form.Group className="mb-3">
-									<Form.Label>File Path</Form.Label>
-									<Form.Control
-										type="text"
-										name="fileName"
-										value={settings.fileName}
-										onChange={handleSettingsChange}
-										placeholder="Enter file path"
-									/>
-								</Form.Group>
-							</Col>
-							<Col md={6}>
-								<Form.Group className="mb-3">
-									<Form.Label>Delimiter</Form.Label>
-									<Form.Control
-										type="text"
-										name="delimiter"
-										value={settings.delimiter}
-										onChange={handleSettingsChange}
-										placeholder="Enter delimiter"
-									/>
-								</Form.Group>
-							</Col>
-						</Row>
-						<Button
-							variant="primary"
-							onClick={handleLoadColumns}
-							disabled={loading || !settings.fileName}
-						>
-							{loading ? <Spinner size="sm" /> : "Load Columns"}
-						</Button>
-					</Form>
-				</Card.Body>
-			</Card>
+				{error && <div className="alert alert-error">{error}</div>}
+				{success && <div className="alert alert-success">{success}</div>}
 
-			{columns.length > 0 && (
-				<Card className="mb-4">
-					<Card.Header>Select Columns</Card.Header>
-					<Card.Body>
-						<ListGroup>
-							{columns.map((column) => (
-								<ListGroup.Item key={column}>
-									<Form.Check
-										type="checkbox"
-										label={column}
-										checked={selectedColumns.includes(column)}
-										onChange={() => handleColumnToggle(column)}
-									/>
-								</ListGroup.Item>
-							))}
-						</ListGroup>
-					</Card.Body>
-				</Card>
-			)}
+				<div className="grid grid-2">
+					<div className="card">
+						<h3 className="mb-3">File Settings</h3>
+						<form onSubmit={handleLoadColumns}>
+							<div className="form-group">
+								<label className="form-label">File Name</label>
+								<input
+									type="text"
+									className="form-control"
+									value={fileSettings.fileName}
+									onChange={(e) =>
+										setFileSettings({
+											...fileSettings,
+											fileName: e.target.value,
+										})
+									}
+									placeholder="example.csv"
+									required
+								/>
+							</div>
 
-			{selectedColumns.length > 0 && (
-				<Card className="mb-4">
-					<Card.Header>Import Settings</Card.Header>
-					<Card.Body>
-						<Form.Group className="mb-3">
-							<Form.Label>Target Table Name</Form.Label>
-							<Form.Control
+							<div className="form-group">
+								<label className="form-label">Delimiter</label>
+								<input
+									type="text"
+									className="form-control"
+									value={fileSettings.delimiter}
+									onChange={(e) =>
+										setFileSettings({
+											...fileSettings,
+											delimiter: e.target.value,
+										})
+									}
+									placeholder=","
+									required
+								/>
+							</div>
+
+							<button
+								type="submit"
+								className="btn btn-primary"
+								disabled={loading}
+							>
+								{loading ? "Loading..." : "Load Columns"}
+							</button>
+						</form>
+					</div>
+
+					<div className="card">
+						<h3 className="mb-3">Connection Settings</h3>
+						<div className="form-group">
+							<label className="form-label">Host</label>
+							<input
 								type="text"
-								value={tableName}
-								onChange={(e) => setTableName(e.target.value)}
-								placeholder="Enter target table name"
+								className="form-control"
+								value={connectionSettings.host}
+								onChange={(e) =>
+									setConnectionSettings({
+										...connectionSettings,
+										host: e.target.value,
+									})
+								}
+								required
 							/>
-						</Form.Group>
-						<Button
-							variant="success"
-							onClick={handleImport}
-							disabled={loading || !tableName}
-						>
-							{loading ? <Spinner size="sm" /> : "Import"}
-						</Button>
-					</Card.Body>
-				</Card>
-			)}
+						</div>
 
-			{status.message && <Alert variant={status.type}>{status.message}</Alert>}
+						<div className="form-group">
+							<label className="form-label">Port</label>
+							<input
+								type="number"
+								className="form-control"
+								value={connectionSettings.port}
+								onChange={(e) =>
+									setConnectionSettings({
+										...connectionSettings,
+										port: e.target.value,
+									})
+								}
+								required
+							/>
+						</div>
+
+						<div className="form-group">
+							<label className="form-label">Database</label>
+							<input
+								type="text"
+								className="form-control"
+								value={connectionSettings.database}
+								onChange={(e) =>
+									setConnectionSettings({
+										...connectionSettings,
+										database: e.target.value,
+									})
+								}
+								required
+							/>
+						</div>
+
+						<div className="form-group">
+							<label className="form-label">User</label>
+							<input
+								type="text"
+								className="form-control"
+								value={connectionSettings.user}
+								onChange={(e) =>
+									setConnectionSettings({
+										...connectionSettings,
+										user: e.target.value,
+									})
+								}
+								required
+							/>
+						</div>
+
+						<div className="form-group">
+							<label className="form-label">JWT Token</label>
+							<input
+								type="password"
+								className="form-control"
+								value={connectionSettings.jwtToken}
+								onChange={(e) =>
+									setConnectionSettings({
+										...connectionSettings,
+										jwtToken: e.target.value,
+									})
+								}
+								required
+							/>
+						</div>
+					</div>
+				</div>
+
+				{columns.length > 0 && (
+					<div className="card mt-4">
+						<h3 className="mb-3">Select Columns</h3>
+						<div className="grid grid-2">
+							{columns.map((column) => (
+								<div key={column} className="form-group">
+									<label className="checkbox-label">
+										<input
+											type="checkbox"
+											checked={selectedColumns.includes(column)}
+											onChange={(e) => {
+												if (e.target.checked) {
+													setSelectedColumns([...selectedColumns, column]);
+												} else {
+													setSelectedColumns(
+														selectedColumns.filter((col) => col !== column)
+													);
+												}
+											}}
+										/>
+										<span className="ml-2">{column}</span>
+									</label>
+								</div>
+							))}
+						</div>
+
+						<div className="form-group mt-4">
+							<label className="form-label">Target Table Name</label>
+							<input
+								type="text"
+								className="form-control"
+								value={targetTable}
+								onChange={(e) => setTargetTable(e.target.value)}
+								placeholder="Enter target table name"
+								required
+							/>
+						</div>
+
+						<button
+							className="btn btn-primary"
+							onClick={handleImport}
+							disabled={loading || !targetTable || selectedColumns.length === 0}
+						>
+							{loading ? "Importing..." : "Import Data"}
+						</button>
+					</div>
+				)}
+			</div>
 		</div>
 	);
-}
+};
 
 export default FlatFileToClickHouse;
