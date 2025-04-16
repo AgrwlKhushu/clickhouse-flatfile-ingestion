@@ -48,12 +48,12 @@ const FlatFileToClickHouse = () => {
 
 		try {
 			await axios.post(
-				"http://localhost:8082/api/ingestion/clickhouse/import",
+				"http://localhost:8082/api/ingestion/flatfile-to-clickhouse",
 				{
-					connectionSettings,
-					fileSettings,
+					fileName: fileSettings.fileName,
+					delimiter: fileSettings.delimiter,
 					columns: selectedColumns,
-					targetTable,
+					tableName: targetTable,
 				}
 			);
 			setSuccess("Data imported successfully");

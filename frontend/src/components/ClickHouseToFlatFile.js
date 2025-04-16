@@ -25,15 +25,24 @@ const ClickHouseToFlatFile = () => {
 		setSuccess("");
 
 		try {
+			// Ensure host doesn't have protocol prefix
+			const cleanHost = connectionSettings.host.replace(/^https?:\/\//, "");
+
 			const response = await axios.post(
 				"http://localhost:8082/api/ingestion/clickhouse/tables",
-				connectionSettings
+				{
+					...connectionSettings,
+					host: cleanHost,
+					port: parseInt(connectionSettings.port, 10),
+				}
 			);
 			setTables(response.data);
 			setSuccess("Successfully connected to ClickHouse");
 		} catch (err) {
 			setError(
-				err.response?.data?.message || "Failed to connect to ClickHouse"
+				err.response?.data?.error ||
+					err.response?.data?.message ||
+					"Failed to connect to ClickHouse"
 			);
 		} finally {
 			setLoading(false);
